@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from contextlib import asynccontextmanager
 
@@ -49,24 +50,31 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():
     return {"Status": "Online"}
 
 @app.get("/q/{question}")
-async def get_answer(question: str):
+async def get_answer(question: str, limit: int = 5):
 
-    q_em = model.encode(question, show_progress_bar=True)
+    q_em = model.encode(question)
 
     cs = q_em @ app.state.embeddings[:,0].T
 
-    ids = np.argpartition(cs, -4)[-4:]
+    ids = np.argpartition(cs, -limit)[-limit:]
 
     ids = ids[np.argsort(cs[ids])][::-1]
 
     return {
-        "answers": app.state.questions.loc[ids].to_dict('records'),
+        "results": app.state.questions.loc[ids].to_dict('records'),
     }
 
 
