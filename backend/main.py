@@ -39,7 +39,7 @@ embeddings = {}
 questions = None
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> None:
+async def lifespan(app: FastAPI):
     with open(empath, "rb") as file:
         app.state.embeddings = np.array(list(pickle.load(file).values()))
 
