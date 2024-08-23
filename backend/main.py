@@ -4,6 +4,7 @@ import numpy as np
 import pickle
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import uvicorn
 from contextlib import asynccontextmanager
 
@@ -43,6 +44,8 @@ questions = None
 async def lifespan(app: FastAPI):
     with open(empath, "rb") as file:
         app.state.embeddings = np.array(list(pickle.load(file).values()))
+    
+    app.state.embeddings = app.state.embeddings/np.linalg.norm(app.state.embeddings, axis=2, keepdims=True)
 
     app.state.questions = pd.read_csv("data.csv")
 
@@ -51,8 +54,16 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["localhost", "amasearch.dwab.dev"]
+)
+
+app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://amasearch.dwab.dev"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -62,10 +73,10 @@ app.add_middleware(
 async def root():
     return {"Status": "Online"}
 
-@app.get("/q/{question}")
-async def get_answer(question: str, limit: int = 5):
+@app.get("/ask/")
+async def get_answer(q: str, limit: int = 5):
 
-    q_em = model.encode(question)
+    q_em = model.encode(q)
 
     cs = q_em @ app.state.embeddings[:,0].T
 

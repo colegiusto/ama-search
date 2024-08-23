@@ -8,7 +8,7 @@
         let question = input.value;
 
 
-        fetch('http://localhost:8000/q/' + question)
+        fetch('http://localhost:8000/ask/?q=' + question)
         .then(response => response.json())
         .then(data => {
             console.log(data)
@@ -21,7 +21,7 @@
     <h1>Sean Caroll AMA Search</h1>
     <p>Search for answers to your questions.</p>
 
-    <textarea bind:this={input} name="search" id="search" rows="10" cols="50" placeholder="Type your question here"></textarea>
+    <textarea on:keypress={(e) => e.key === 'Enter' && (search() || e.preventDefault())} bind:this={input} name="search" id="search"  placeholder="Type your question here"></textarea>
     <br>
     <button on:click={search}>Search</button>
     <br>
@@ -32,6 +32,9 @@
 
 <style>
     textarea{
+        width: 100%;
+        height: 10em;
         resize: none;
     }
+    
 </style>
